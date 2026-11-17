@@ -15,6 +15,9 @@ concurrency:
 jobs:
   pr-title:
     name: Check PR Title
+    # Dependabot's titles are Conventional Commits from .github/dependabot.yaml's prefixes, but it always
+    # capitalises "Bump", which the lowercase subject rule rejects, and nothing in its config changes that.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
