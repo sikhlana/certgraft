@@ -38,8 +38,9 @@ tidy:
 fix:
 	$(GO_RUN) golangci-lint run --fix ./... < /dev/null
 
-## lint: golangci-lint, actionlint on the workflows, hadolint on the Dockerfile
+## lint: golangci-lint (config checked against its schema first, as CI does), actionlint, hadolint
 lint:
+	$(GO_RUN) golangci-lint config verify < /dev/null
 	$(GO_RUN) golangci-lint run ./... < /dev/null
 	$(RUN_BASE) --network none $(ACTIONLINT_IMAGE) -config-file .github/actionlint.yaml < /dev/null
 	docker run --rm -i --network none $(HADOLINT_IMAGE) < Dockerfile
