@@ -121,7 +121,7 @@ linters:
     exhaustive:
       check:
         - switch
-        - map
+        - mapliteral
 
     forbidigo:
       # Resolve identifiers through type information, so methods match as <pkg>.<Type>.<Method> and import aliases
