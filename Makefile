@@ -9,6 +9,9 @@ GO_VERSION := $(shell cat .go-version)
 GO_TOOLS_IMAGE   ?= golangci/golangci-lint:v2.15.0@sha256:fbfcfd12a6f8d7f1b97b3362ca80fc2a244d46863148c73cb88e7793af96c481
 ACTIONLINT_IMAGE ?= rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 HADOLINT_IMAGE   ?= hadolint/hadolint:v2.15.1@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d
+# govulncheck judges the standard library of the Go it runs on, so it gets the newest patch release
+# rather than the Go that GO_TOOLS_IMAGE happens to ship. CI does the same through setup-go.
+VULNCHECK_IMAGE  ?= golang:1.27.4@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf
 GO_CACHE_VOL     := certgraft-go-cache
 
 # The checkout is mounted at /work, with .git hidden behind an empty tmpfs; files are written as the host user.
@@ -63,7 +66,7 @@ generate:
 
 ## vulncheck: govulncheck (needs the vulnerability database, so it has network)
 vulncheck:
-	$(RUN_BASE) $(GO_ENV) $(GO_TOOLS_IMAGE) go tool govulncheck ./... < /dev/null
+	$(RUN_BASE) $(GO_ENV) $(VULNCHECK_IMAGE) go tool govulncheck ./... < /dev/null
 
 ## image: build the container image as certgraft
 image:
