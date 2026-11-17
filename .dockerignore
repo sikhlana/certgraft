@@ -1,0 +1,40 @@
+# Keep the build context small and never ship secrets, VCS or vendored trees.
+# Each image builds from its own directory; this is the baseline for that directory.
+**/.git/
+**/.github/
+**/.infra/
+**/.cache/
+**/node_modules/
+**/vendor/
+**/.venv/
+**/__pycache__/
+**/dist/
+**/build/
+**/.envrc*
+**/.DS_Store
+**/*.swp
+**/*.swo
+.idea/
+.vscode/
+docs/
+tests/
+tmp/
+.dockerignore
+.editorconfig
+.gitattributes
+.gitignore
+Dockerfile
+README.md
+# Tooling and tests stay out of the image's context.
+.golangci.yml
+**/*_test.go
+/certgraft
+# Tooling stays out of the image context.
+Makefile
+AGENTS.md
+CLAUDE.md
+LICENSE
+openspec/
+.agents/
+.claude/
+.scratch/

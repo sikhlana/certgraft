@@ -1,0 +1,4 @@
+# Every ignore carries the reason it exists and when it can go.
+paths:
+  .github/workflows/**/*.yaml:
+    ignore: []

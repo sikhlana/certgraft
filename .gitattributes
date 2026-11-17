@@ -1,0 +1,8 @@
+* text=auto eol=lf
+
+# Go
+*.go diff=golang
+go.sum linguist-generated=true
+
+# mockgen output
+mock_*_test.go linguist-generated=true

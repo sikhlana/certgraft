@@ -1,0 +1,139 @@
+schema: spec-driven
+
+context: |
+  Project: certgraft: a local OCI registry that serves upstream container images with the operator's
+  extra CA roots grafted in, for developers behind TLS-intercepting proxies (Zscaler, Cisco Umbrella,
+  Netskope and the like).
+  This block is the constitution: AGENTS.md and README.md point here rather than restating it.
+
+  Position:
+    Upstream: the allowlisted public registries (Docker Hub, gcr.io, ghcr.io, quay.io,
+    mcr.microsoft.com); the operator's CA root PEM files; the container runtime's BuildKit, which
+    applies a client-side source policy; github.com/sikhlana/pkg (service kernel) and
+    go-containerregistry (OCI handling).
+    Downstream: the operator's own builds and pulls on their machine. github.com/sikhlana/ai-context
+    only points at certgraft.
+    The contract: an image name, tag or digest pin resolves to exactly the upstream content plus one
+    trust layer and a label, without editing the Dockerfile.
+
+  Tech stack and layout:
+    One Go module. cmd/ is wiring only (Cobra commands picking runners); internal/<concern>/ holds
+    the behaviour, one package per concern, each owning its Config and fx Module. make runs every
+    toolchain in a pinned container. openspec/ holds this constitution, the capability specs and
+    changes; docs/ holds documentation for people. Versions live in .go-version and go.mod.
+
+  Glossary:
+    Extra roots: the operator's CA certificates, the ones the proxy signs with.
+    Trust point: a place in an image where TLS trust is configured (a CA bundle, a JVM trust store,
+      a runtime's CA env var).
+    Patch: an upstream image with the extra roots grafted on as one appended layer plus config edits.
+    Pass-through: an image with nothing to patch, served byte-for-byte as upstream.
+    Root-set fingerprint: identifies the set of extra roots regardless of order; part of every cache key.
+    Source policy: the BuildKit rule set that rewrites image references to certgraft.
+    Digest-pin tag: sha256-<hex>, the tag the source policy turns image@sha256:<hex> into.
+    Runtime: the container runtime on the operator's machine (Docker Desktop, OrbStack).
+    Operator: the developer running certgraft on their own machine.
+  Independent axes, never conflate them:
+    Upstream registry host (the allowlist) vs URL shape (policy path /v2/<host>/<repo> vs mirror path
+      /v2/<repo>).
+    Runtime vs entry path (BuildKit source policy for builds vs a registry mirror for pulls).
+    Image platform vs the operator's architecture: a patch never runs the image, so every platform
+      is patched the same way.
+    Upstream digest vs patched digest.
+
+  Principles:
+    Never execute image content to patch it.
+    Add trust; never disable or weaken TLS verification.
+    A digest pin means exactly that upstream digest: serve its patch or fail, never other content.
+    Upstream hosts come only from the allowlist, never from request input, so certgraft is never an
+      open proxy.
+    Settings an image defines win: never overwrite its env; append to the file it names.
+    Listen on loopback only.
+    Switching certgraft off is one action.
+    Every failure mode is named: an upstream error passes through; a failed trust point serves the
+      image unpatched and labelled; an unreachable upstream serves the cached patch with a log line.
+
+  Conventions:
+    Go: golangci-lint with .golangci.yml (formatters, forbidigo and depguard bans, modernize),
+      enforced by make lint and CI.
+    One fx graph assembled in internal/app; constructors take one fx.In Params struct; operator
+      settings only in a package's Config (review).
+    Tests: external <pkg>_test packages with export_test.go for white-box access; testify
+      require/assert; gomock for consumer interfaces; real dependencies over fakes, including an
+      in-process registry over TLS (forbidigo bans t.Fatal/t.Error; the rest by review).
+    Toolchains run only through make, in pinned containers (review).
+    Workflows pass actionlint and the Dockerfile passes hadolint (make lint).
+    PR titles are Conventional Commits; PRs are squash-merged (pr-title workflow).
+
+  Domain notes:
+    Pre-existing, never created by certgraft: the operator's CA roots and their runtime and its
+      daemon configuration.
+    certgraft owns its cache directory and its source policy file; edits to a runtime's daemon
+      config are backed up first and reversible.
+    Deleting the cache only forces re-patching. Changing the root set invalidates every cached patch.
+    Patched images in the operator's local image store carry the corporate root: pushing them leaks
+      it, so pushes come from CI or a shell without the source policy.
+
+rules:
+  proposal:
+    - >-
+      State the blast radius: which capability specs and which packages or files are affected (two
+      separate lists).
+    - >-
+      Rollout order: merge, tag vX.Y.Z, GoReleaser release, Homebrew tap formula, operators upgrade.
+      Say whether the change needs a new release and anything operators must do after upgrading.
+    - >-
+      Call out anything that replaces rather than updates in place (cache layout, config keys, image
+      labels, the policy file format), and anything breaking for operators, marked BREAKING.
+    - >-
+      Call out any divergence from the principles and conventions above.
+  specs:
+    - >-
+      Specs are named for capabilities (abilities the system has), never for packages or binaries.
+      One capability may be carried by several packages and one package may carry several; each spec
+      says which packages carry it today.
+    - >-
+      Requirements describe the contract from the operator's side, not the implementation, and stay
+      true across a refactor.
+    - >-
+      Use SHALL/MUST/MAY (RFC 2119). Each requirement has at least one scenario headed exactly
+      `#### Scenario:`.
+    - >-
+      Scenarios are checkable against something real: a Go test (registry and patching behaviour run
+      against an in-process registry over TLS), or a real docker build or pull on Docker Desktop or
+      OrbStack recorded under .scratch/.
+  design:
+    - >-
+      Record exact before/after values for risky changes (cache keys, config keys, label names, the
+      policy format, versions moved) and which existing state was checked.
+    - >-
+      Name any new dependency and why it beats hand-rolled code.
+    - >-
+      Reference the prior exploration or decision when one exists. Durable rationale moves to
+      docs/<topic>.md at archive; design.md is the discussion surface, not its final home.
+  tasks:
+    - >-
+      Group tasks by package or area; each fits in one PR.
+    - >-
+      End tasks at what the change's own PR can verify. Merging, releasing and post-release checks
+      aren't tasks: put what each must show in design.md's migration plan.
+    - >-
+      Include the verification chain as explicit tasks: make fix, make lint (golangci-lint,
+      actionlint, hadolint), make test, make tidy leaving no diff, and make vulncheck when
+      dependencies change.
+    - >-
+      Include README and docs/ tasks for changed operator-facing surfaces (commands, flags, config
+      keys, labels).
+
+operations:
+  apply:
+    guidance:
+      - >-
+        Verify with real output; never claim a run, build or check that didn't happen.
+      - >-
+        Run make lint before marking a task complete.
+  archive:
+    guidance:
+      - >-
+        Before archiving, record in design.md what actually happened, covering deviations from the
+        design, fixes made in review and follow-ups left open.

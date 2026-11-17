@@ -1,0 +1,38 @@
+# direnv: .envrc is local; each unit commits an .envrc.example
+.envrc
+
+# Editor / OS noise
+**/.DS_Store
+**/.idea/
+**/.vscode/
+**/*.swp
+**/*.swo
+
+# Logs and runtime droppings
+**/*.log
+**/tmp/
+
+# Tooling caches (containerised toolchains write here)
+.cache/
+
+# Build outputs
+**/dist/
+**/build/
+**/out/
+
+# Go: go.work is committed, go.work.sum is local-only
+go.work.sum
+vendor/
+*.test
+*.out
+# Local agent files and secrets (ai-init-repo)
+CLAUDE.local.md
+AGENTS.local.md
+.claude/settings.local.json
+*.pem
+*.p12
+.envrc*
+!.envrc.example
+
+# The binary `go build .` leaves in the root.
+/certgraft

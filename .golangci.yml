@@ -1,0 +1,243 @@
+# golangci-lint v2. Based on github.com/sikhlana/pkg's config (itself from maratori's golden config), with the
+# service's bans. Run through `make lint` / `make fix`; formatting comes from `--fix`, never by hand.
+version: "2"
+
+issues:
+  max-same-issues: 50
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+    - golines
+  settings:
+    goimports:
+      # This module's own path: shared modules sort as third-party.
+      local-prefixes:
+        - github.com/sikhlana/certgraft
+    golines:
+      max-len: 120
+
+linters:
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - copyloopvar
+    - cyclop
+    - depguard
+    - dupl
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - funcorder
+    - funlen
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - gochecksumtype
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gomoddirectives
+    - goprintffuncname
+    - gosec
+    - govet
+    - iface
+    - ineffassign
+    - intrange
+    - loggercheck
+    - makezero
+    - mirror
+    - modernize
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - perfsprint
+    - predeclared
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - testableexamples
+    - testifylint
+    - testpackage
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+    - wsl_v5
+
+  settings:
+    cyclop:
+      max-complexity: 30
+      package-average: 15.0
+
+    depguard:
+      rules:
+        non-test files:
+          files:
+            - "!$test"
+          deny:
+            - pkg: math/rand$
+              desc: Use math/rand/v2 instead.
+        all files:
+          files:
+            - "$all"
+          deny:
+            - pkg: log$
+              desc: Use the injected *slog.Logger.
+            - pkg: github.com/labstack/echo/v4
+              desc: Use github.com/labstack/echo/v5.
+            - pkg: github.com/golang/mock
+              desc: Use go.uber.org/mock.
+
+    errcheck:
+      check-type-assertions: true
+
+    exhaustive:
+      check:
+        - switch
+        - map
+
+    forbidigo:
+      # Resolve identifiers through type information, so methods match as <pkg>.<Type>.<Method> and import aliases
+      # can't dodge a ban. Every "use X, not Y" convention whose Y is a symbol belongs here.
+      analyze-types: true
+      forbid:
+        - pattern: ^testing\.(T|B|F|TB)\.(Fatal|Fatalf|Error|Errorf|Fail|FailNow)$
+          pkg: ^testing$
+          msg: Report failures through testify (require.* to stop, assert.* to continue).
+        - pattern: ^errors\.As$
+          pkg: ^errors$
+          msg: Use errors.AsType[T] instead.
+        - pattern: ^fx\.Shutdowner$
+          pkg: ^go\.uber\.org/fx$
+          msg: Return from a kernelrun runner instead; kernelrun.Run never listens for a shutdown request.
+        - pattern: ^os\.Exit$
+          pkg: ^os$
+          msg: Return cli.Exit(code, err) from the command; os.Exit skips deferred cleanup and fx's stop hooks.
+        - pattern: ^os\.(Getenv|LookupEnv|Environ)$
+          pkg: ^os$
+          msg: Operator settings come through Config, loaded by configloader.
+        - pattern: ^http\.(ListenAndServe|ListenAndServeTLS|Serve|ServeTLS)$
+          pkg: ^net/http$
+          msg: Serve through httpserver.ProvideServer and a command's httpserver.ProvideRunner.
+        - pattern: ^echo\.Echo\.(Start|StartTLS)$
+          pkg: ^github\.com/labstack/echo/v5$
+          msg: Hand the router to httpserver as a Spec's Handler; httpserver owns the listener.
+        - pattern: ^otel\.(Tracer|Meter|GetTracerProvider|GetMeterProvider|GetTextMapPropagator)$
+          pkg: ^go\.opentelemetry\.io/otel$
+          msg: Take the trace.TracerProvider or propagation.TextMapPropagator by injection.
+        - pattern: ^otel\.(SetTracerProvider|SetMeterProvider|SetTextMapPropagator)$
+          pkg: ^go\.opentelemetry\.io/otel$
+          msg: List telemetry.InstallGlobals instead.
+
+    funcorder:
+      struct-method: false
+
+    funlen:
+      lines: 100
+      statements: 50
+
+    gochecksumtype:
+      default-signifies-exhaustive: false
+
+    gocognit:
+      min-complexity: 20
+
+    gocritic:
+      settings:
+        captLocal:
+          paramsOnly: false
+        underef:
+          skipRecvDeref: false
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+      settings:
+        shadow:
+          strict: true
+
+    nakedret:
+      max-func-lines: 0
+
+    nolintlint:
+      allow-no-explanation: [funlen, gocognit, golines]
+      require-explanation: true
+      require-specific: true
+
+    perfsprint:
+      strconcat: false
+
+    reassign:
+      patterns:
+        - ".*"
+
+    sloglint:
+      attr-only: true
+      no-global: all
+      context: scope
+
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+        - -ST1016
+        - -QF1008
+
+    usetesting:
+      os-temp-dir: true
+      context-background: true
+      context-todo: true
+
+    wsl_v5:
+      cuddle-max-statements: 0
+      enable:
+        - after-block
+
+  exclusions:
+    warn-unused: true
+    presets:
+      - std-error-handling
+      - common-false-positives
+    rules:
+      - source: "TODO"
+        linters: [godot]
+      # A defer stays directly under the statement that acquired what it releases.
+      - text: "too many statements above defer"
+        linters: [wsl_v5]
+      - path: '_test\.go'
+        linters:
+          - bodyclose
+          - dupl
+          - errcheck
+          - funlen
+          - goconst
+          - gosec
+          - noctx
