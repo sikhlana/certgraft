@@ -32,7 +32,7 @@ RUN --network=none \
  && mkdir -p /out/data
 
 # Pin by digest alongside the tag. Multi-arch, so it runs on arm64 laptops and amd64 nodes.
-FROM cgr.dev/chainguard/static:latest@sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9
+FROM cgr.dev/chainguard/static:latest@sha256:54b5f14edad6f2554774d499539e837588a501bd5bf22ac6cd97b1068c35d44d
 COPY --from=build /out/app /app
 # The cache volume mounts here; a new named volume copies this directory's ownership, so nonroot can write it.
 COPY --from=build --chown=65532:65532 /out/data /var/lib/certgraft
