@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/google/go-containerregistry v0.22.1
-	github.com/labstack/echo/v5 v5.4.4
+	github.com/labstack/echo/v5 v5.4.6
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/sikhlana/pkg/cli v0.3.1
 	github.com/sikhlana/pkg/config/configloader v0.1.4
